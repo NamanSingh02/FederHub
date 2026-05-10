@@ -94,7 +94,6 @@ def test_create_job_unauthorized():
         "job_name": "Unauthorized Job",
         "expected_clients": 2,
         "round_count": 3,
-        "weight_count": 49
     }
     response = client.post("/jobs/", json=payload)
     # Should block access because there is no JWT header
@@ -107,7 +106,6 @@ def test_create_job_authorized(auth_token):
         "description": "Created via pytest",
         "expected_clients": 2,
         "round_count": 3,
-        "weight_count": 49,
         "local_epochs": 2
     }
     response = client.post(
@@ -136,39 +134,51 @@ def client_token():
     db.add(test_client)
     db.commit()
     db.close()
-    
+
     response = client.post(
         "/auth/login",
         json={"email": "hospital4@test.com", "password": "password123"}
     )
-    return response.json()["access_token"]
+    data = response.json()
+    # Return both the token and the user_id so tests can use either
+    return {"token": data["access_token"], "user_id": data["user_id"]}
 
 
 def test_privacy_lock_hides_global_model(auth_token, client_token):
     """
     INTEGRATION TEST:
-    1. ML Engineer creates a job.
-    2. A fresh Client Operator tries to view the details.
-    3. The API must block the global weights because they haven't contributed.
+    1. ML Engineer creates a job and assigns the client operator.
+    2. A fresh Client Operator (assigned but not yet contributed) tries to view the details.
+    3. The API must return 200 but scrub global weights and metrics.
     """
-    
-    # 1. Admin creates the job
+
+    # 1. ML Engineer creates the job
     payload = {
         "job_name": "Bone Fracture Phase 2",
         "expected_clients": 2,
         "round_count": 3,
-        "weight_count": 49
     }
     create_res = client.post("/jobs/", json=payload, headers={"Authorization": f"Bearer {auth_token}"})
     assert create_res.status_code == 201
     job_id = create_res.json()["id"]
-    
-    # 2. Client Operator fetches the job details
-    details_res = client.get(f"/jobs/{job_id}/details", headers={"Authorization": f"Bearer {client_token}"})
+
+    # 2. Assign the client operator to the job so they can access it
+    assign_res = client.post(
+        f"/jobs/{job_id}/assign",
+        json={"user_ids": [client_token["user_id"]]},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert assign_res.status_code == 200
+
+    # 3. Client Operator fetches job details (assigned but not yet contributed)
+    details_res = client.get(
+        f"/jobs/{job_id}/details",
+        headers={"Authorization": f"Bearer {client_token['token']}"},
+    )
     assert details_res.status_code == 200
     details = details_res.json()
-    
-    # 3. Assert the Zero-Knowledge Privacy Locks are triggered!
+
+    # 4. Assert the Zero-Knowledge Privacy Locks are triggered
     assert details["final_weights"] == []  # Weights must be scrubbed
     assert details["metrics"] == []        # Analytics must be scrubbed
     assert "You must submit a local training update" in details.get("message", "")
