@@ -73,16 +73,23 @@ FederHub is a privacy-preserving federated machine learning platform. It connect
 
 ## Setup
 
-Run once to install all dependencies and build the Docker training image:
+Run once to install all dependencies and build the Docker training image.
 
+**Windows:**
 ```bat
 setup_windows_dependencies.bat
+```
+
+**macOS:**
+```bash
+chmod +x setup_mac_dependencies.command
+./setup_mac_dependencies.command
 ```
 
 This installs Python packages for the backend and federated engine, Node packages for the frontend and client, and builds the `federhub-beta-trainer` Docker image.
 
 > **After changing any Python training file** (`client/ml/train.py`, `client/grpc_weight_sender.py`, etc.), rebuild the Docker image from the project root:
-> ```bat
+> ```bash
 > docker build -t federhub-beta-trainer -f client/Dockerfile .
 > ```
 
@@ -92,8 +99,15 @@ This installs Python packages for the backend and federated engine, Node package
 
 ### Start all backend services
 
+**Windows:**
 ```bat
 run_all_services_windows.bat
+```
+
+**macOS:**
+```bash
+chmod +x run_all_services_mac.command
+./run_all_services_mac.command
 ```
 
 Opens three terminals:
@@ -103,8 +117,15 @@ Opens three terminals:
 
 ### Start the desktop client
 
+**Windows:**
 ```bat
 run_client_windows.bat
+```
+
+**macOS:**
+```bash
+chmod +x run_client_mac.command
+./run_client_mac.command
 ```
 
 Installs Node dependencies if missing, then launches the Electron app from source.
@@ -137,13 +158,13 @@ The compiled Windows installer is served by the backend at `/download/client/win
    client/dist/FederHub Edge Node Setup 0.1.0.exe  →  backend/downloads/FederHub-Edge-Client.exe
    ```
 
-The installer is not tracked in git (89 MB binary). Rebuild and copy it when distributing to client operators.
+> A macOS build can only be produced on a Mac. From the `client/` directory run `npm run pack:mac`, then copy the output `.dmg` to `backend/downloads/`.
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in `federated-engine/` and `backend/` as needed:
+Copy the `.env.example` files in `federated-engine/` and `backend/` to `.env` and fill in the values:
 
 ```env
 # federated-engine/.env
@@ -154,6 +175,7 @@ SECRET_KEY=your-secret-key-here
 # backend/.env
 DATABASE_URL=sqlite:///./federhub_local.db
 SECRET_KEY=your-secret-key-here
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 Both services must use the **same `SECRET_KEY`** — the gRPC server validates JWTs issued by the backend.
@@ -163,14 +185,14 @@ Both services must use the **same `SECRET_KEY`** — the gRPC server validates J
 ## Project Structure
 
 ```
-FederHub-main/
+FederHub/
 ├── backend/                  # FastAPI REST API
 │   ├── app/
 │   │   ├── routers/jobs.py   # Job CRUD, aggregation, model download
 │   │   ├── routers/auth.py   # Registration, login, user management
 │   │   ├── models.py         # SQLAlchemy ORM models
 │   │   └── schemas.py        # Pydantic request/response schemas
-│   └── downloads/            # Compiled client installers (not in git)
+│   └── downloads/            # Compiled client installers
 ├── federated-engine/         # gRPC aggregation server
 │   ├── grpc_server.py        # Rolling FedAvg, JWT validation, state persistence
 │   ├── db_connector.py       # DB helpers shared between server and tasks
@@ -188,8 +210,11 @@ FederHub-main/
 │   ├── grpc_weight_sender.py # Streams .pt weights to Gamma via gRPC
 │   └── Dockerfile            # Training container definition
 ├── run_all_services_windows.bat
+├── run_all_services_mac.command
 ├── run_client_windows.bat
-└── setup_windows_dependencies.bat
+├── run_client_mac.command
+├── setup_windows_dependencies.bat
+└── setup_mac_dependencies.command
 ```
 
 ---
