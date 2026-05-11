@@ -144,12 +144,12 @@ def client_token():
     return {"token": data["access_token"], "user_id": data["user_id"]}
 
 
-def test_privacy_lock_hides_global_model(auth_token, client_token):
+def test_unpublished_results_block_client_details(auth_token, client_token):
     """
     INTEGRATION TEST:
     1. ML Engineer creates a job and assigns the client operator.
     2. A fresh Client Operator (assigned but not yet contributed) tries to view the details.
-    3. The API must return 200 but scrub global weights and metrics.
+    3. The API must block the live details page until results are published.
     """
 
     # 1. ML Engineer creates the job
@@ -175,10 +175,5 @@ def test_privacy_lock_hides_global_model(auth_token, client_token):
         f"/jobs/{job_id}/details",
         headers={"Authorization": f"Bearer {client_token['token']}"},
     )
-    assert details_res.status_code == 200
-    details = details_res.json()
-
-    # 4. Assert the Zero-Knowledge Privacy Locks are triggered
-    assert details["final_weights"] == []  # Weights must be scrubbed
-    assert details["metrics"] == []        # Analytics must be scrubbed
-    assert "You must submit a local training update" in details.get("message", "")
+    assert details_res.status_code == 403
+    assert "not published yet" in details_res.json()["detail"]

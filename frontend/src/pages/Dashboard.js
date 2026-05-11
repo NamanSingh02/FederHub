@@ -342,14 +342,20 @@ export default function Dashboard() {
                   <p style={styles.descriptionText}>{job.description}</p>
                 )}
 
-                <button
-                  style={styles.detailBtnFull}
-                  onClick={() => navigate(`/jobs/${job.id}`)}
-                >
-                  View Live Dashboard & Details
-                </button>
+                {canManageJobs || job.results_published ? (
+                  <button
+                    style={styles.detailBtnFull}
+                    onClick={() => navigate(`/jobs/${job.id}`)}
+                  >
+                    View Live Dashboard & Details
+                  </button>
+                ) : (
+                  <p style={styles.clientNote}>
+                    Live dashboard and model details will be available after the ML Engineer publishes final results.
+                  </p>
+                )}
 
-                {isCompleted && (
+                {isCompleted && (canManageJobs || job.results_published) && (
                   <CompletedResults
                     job={job}
                     metrics={metrics}

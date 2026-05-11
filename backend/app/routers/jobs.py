@@ -79,6 +79,14 @@ def check_job_access(db: Session, job: models.JobConfiguration, current_user: mo
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to this job.")
 
 
+def require_published_for_client(job: models.JobConfiguration, current_user: models.User) -> None:
+    if current_user.role == "client_operator" and not job.results_published:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Results are not published yet. The live dashboard and model details are visible to client operators only after the ML Engineer publishes final results.",
+        )
+
+
 def weighted_average(values: list[float | None], sample_counts: list[int]) -> float | None:
     pairs = [(value, count) for value, count in zip(values, sample_counts) if value is not None]
     if not pairs:
@@ -378,6 +386,8 @@ def get_job_details(
     check_job_access(db, job, current_user)
 
     is_manager = current_user.role in {"platform_admin", "ml_engineer"}
+    if not is_manager:
+        require_published_for_client(job, current_user)
     
     # Check if this specific user has ever contributed to this job
     user_has_contributed = db.query(models.ClientSubmission).filter(
@@ -453,6 +463,7 @@ def get_job_metrics(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     check_job_access(db, job, current_user)
+    require_published_for_client(job, current_user)
 
     if current_user.role == "client_operator":
         user_has_contributed = db.query(models.ClientSubmission).filter(
@@ -784,6 +795,7 @@ def download_job_model(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     check_job_access(db, job, current_user)
+    require_published_for_client(job, current_user)
 
     latest = (
         db.query(models.RoundMetric)
@@ -832,6 +844,7 @@ def download_job_model_by_round(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     check_job_access(db, job, current_user)
+    require_published_for_client(job, current_user)
 
     metric = (
         db.query(models.RoundMetric)
