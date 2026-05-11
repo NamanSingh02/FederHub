@@ -311,15 +311,12 @@ function ModelVersionsPanel({ metrics, submissions, jobId, jobName }) {
   };
 
   const latestRound = metrics[metrics.length - 1].round_number;
-  const emailsByRound = (submissions || []).reduce((acc, submission) => {
+  const submissionsByRound = (submissions || []).reduce((acc, submission) => {
     const round = submission.round_number;
     if (!acc[round]) {
       acc[round] = [];
     }
-    const label = submission.client_email || submission.client_label;
-    if (label && !acc[round].includes(label)) {
-      acc[round].push(label);
-    }
+    acc[round].push(submission);
     return acc;
   }, {});
 
@@ -344,8 +341,16 @@ function ModelVersionsPanel({ metrics, submissions, jobId, jobName }) {
             </tr>
           </thead>
           <tbody>
-            {[...metrics].reverse().map((m) => (
-              <tr key={m.round_number}>
+            {[...metrics].reverse().map((m) => {
+              const roundSubmissions = [...(submissionsByRound[m.round_number] || [])]
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                .slice(0, m.num_clients || 0);
+              const clientEmails = roundSubmissions
+                .map((submission) => submission.client_email || submission.client_label)
+                .filter(Boolean);
+
+              return (
+              <tr key={m.id}>
                 <td style={styles.td}>
                   <span style={m.round_number === latestRound ? styles.latestBadge : styles.roundBadge}>
                     Round {m.round_number}
@@ -357,8 +362,8 @@ function ModelVersionsPanel({ metrics, submissions, jobId, jobName }) {
                 <td style={styles.td}>{m.total_samples ?? "—"}</td>
                 <td style={styles.td}>{m.num_clients ?? "—"}</td>
                 <td style={styles.td}>
-                  {(emailsByRound[m.round_number] || []).length > 0
-                    ? emailsByRound[m.round_number].join(", ")
+                  {clientEmails.length > 0
+                    ? clientEmails.join(", ")
                     : "—"}
                 </td>
                 <td style={styles.td}>
@@ -385,7 +390,8 @@ function ModelVersionsPanel({ metrics, submissions, jobId, jobName }) {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
