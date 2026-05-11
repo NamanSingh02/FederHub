@@ -118,7 +118,12 @@ export default function JobDetailsPage() {
             )}
 
             {details.metrics && details.metrics.length > 0 && (
-              <ModelVersionsPanel metrics={details.metrics} jobId={jobId} jobName={details.job.job_name} />
+              <ModelVersionsPanel
+                metrics={details.metrics}
+                submissions={details.submissions}
+                jobId={jobId}
+                jobName={details.job.job_name}
+              />
             )}
 
             <section style={styles.panel}>
@@ -138,7 +143,9 @@ export default function JobDetailsPage() {
                   <tbody>
                     {details.submissions.map((submission) => (
                       <tr key={submission.id}>
-                        <td style={styles.td}>{submission.client_label}</td>
+                        <td style={styles.td}>
+                          {submission.client_email || submission.client_label}
+                        </td>
                         <td style={styles.td}>{submission.round_number}</td>
                         <td style={styles.td}>{submission.sample_count}</td>
                         <td style={styles.td}>{formatMetric(submission.accuracy)}</td>
@@ -278,7 +285,7 @@ function MetricsDashboard({ metrics, finalMetric }) {
   );
 }
 
-function ModelVersionsPanel({ metrics, jobId, jobName }) {
+function ModelVersionsPanel({ metrics, submissions, jobId, jobName }) {
   const [downloading, setDownloading] = useState(null);
 
   const downloadRound = async (roundNumber, format) => {
@@ -304,6 +311,17 @@ function ModelVersionsPanel({ metrics, jobId, jobName }) {
   };
 
   const latestRound = metrics[metrics.length - 1].round_number;
+  const emailsByRound = (submissions || []).reduce((acc, submission) => {
+    const round = submission.round_number;
+    if (!acc[round]) {
+      acc[round] = [];
+    }
+    const label = submission.client_email || submission.client_label;
+    if (label && !acc[round].includes(label)) {
+      acc[round].push(label);
+    }
+    return acc;
+  }, {});
 
   return (
     <section style={styles.panel}>
@@ -320,6 +338,7 @@ function ModelVersionsPanel({ metrics, jobId, jobName }) {
               <th style={styles.th}>Loss</th>
               <th style={styles.th}>Total Samples</th>
               <th style={styles.th}>Clients</th>
+              <th style={styles.th}>Client Emails</th>
               <th style={styles.th}>Aggregated At</th>
               <th style={styles.th} colSpan={2}>Download</th>
             </tr>
@@ -337,6 +356,11 @@ function ModelVersionsPanel({ metrics, jobId, jobName }) {
                 <td style={styles.td}>{formatMetric(m.loss)}</td>
                 <td style={styles.td}>{m.total_samples ?? "—"}</td>
                 <td style={styles.td}>{m.num_clients ?? "—"}</td>
+                <td style={styles.td}>
+                  {(emailsByRound[m.round_number] || []).length > 0
+                    ? emailsByRound[m.round_number].join(", ")
+                    : "—"}
+                </td>
                 <td style={styles.td}>
                   {m.completed_at ? new Date(m.completed_at).toLocaleString() : "—"}
                 </td>
@@ -419,4 +443,3 @@ const styles = {
   latestBadge: { background: "#4ade80", color: "#052e16", borderRadius: "4px", padding: "2px 8px", fontWeight: "bold", fontSize: "13px" },
   roundBadge: { background: "#1e293b", color: "#94a3b8", borderRadius: "4px", padding: "2px 8px", fontSize: "13px", border: "1px solid #334155" },
 };
-
