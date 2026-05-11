@@ -100,6 +100,38 @@ class TestDBConnector(unittest.TestCase):
         )
         self.assertIsNotNone(metric.global_weights_snapshot)
 
+    def test_final_round_waits_for_expected_clients_before_completion(self):
+        job = JobConfiguration(
+            id=3,
+            job_name="Two-Client-Final-Round",
+            round_count=1,
+            local_epochs=1,
+            expected_clients=2,
+            status="running",
+        )
+        self.session.add(job)
+        self.session.commit()
+
+        record_round_metric(
+            self.session,
+            job_id=3,
+            round_number=1,
+            num_clients=1,
+            total_samples=50,
+        )
+        config = fetch_job_config(self.session, 3)
+        self.assertEqual(config["status"], "running")
+
+        record_round_metric(
+            self.session,
+            job_id=3,
+            round_number=1,
+            num_clients=2,
+            total_samples=100,
+        )
+        config = fetch_job_config(self.session, 3)
+        self.assertEqual(config["status"], "completed")
+
     # ── get_round_metrics ────────────────────────────────────────────────
 
     def test_get_round_metrics_returns_ordered(self):

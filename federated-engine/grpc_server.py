@@ -101,7 +101,10 @@ class AggregatorServicer(federation_pb2_grpc.AggregatorServicer):
                                 "participating_clients": set(meta.get("client_labels") or []),
                                 "input_columns": meta.get("input_columns") or [],
                                 "label_column": meta.get("label_column") or "label",
-                                "total_updates_processed": latest.round_number * expected_clients,
+                                "total_updates_processed": (
+                                    ((latest.round_number or 1) - 1) * expected_clients
+                                    + min(latest.num_clients or expected_clients, expected_clients)
+                                ),
                             })
                             print(f"[SERVER] Restored Job {job_id} from Round {latest.round_number} ({latest.total_samples} samples)")
                 except Exception as e:
@@ -219,6 +222,7 @@ class AggregatorServicer(federation_pb2_grpc.AggregatorServicer):
         global_step = job_state["total_updates_processed"]
         expected_clients = job_state["expected_clients"]
         global_round = ((global_step - 1) // expected_clients) + 1
+        updates_in_round = ((global_step - 1) % expected_clients) + 1
         job_state["participating_clients"].add(request.client_id)
         new_samples = request.sample_count
 
@@ -325,7 +329,7 @@ class AggregatorServicer(federation_pb2_grpc.AggregatorServicer):
         self._record_metrics_to_db(
             job_id=job_id,
             current_round=global_round,
-            num_clients=len(job_state["participating_clients"]),
+            num_clients=updates_in_round,
             total_samples=job_state["rolling_total_samples"],
             accuracy=job_state["rolling_accuracy"],
             loss=job_state["rolling_loss"],

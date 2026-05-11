@@ -30,9 +30,11 @@ export default function CreateJobPage() {
   }, [navigate, user.role]);
 
   const handleChange = (e) => {
-    const value =
-      e.target.type === "number" ? parseInt(e.target.value, 10) : e.target.value;
-    setForm({ ...form, [e.target.name]: value });
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const stopNumberWheel = (event) => {
+    event.currentTarget.blur();
   };
 
   const toggleClient = (id) => {
@@ -53,11 +55,23 @@ export default function CreateJobPage() {
       setError("Job description is required.");
       return;
     }
-    if (form.round_count < 1 || form.local_epochs < 1) {
+    const roundCount = parseInt(form.round_count, 10);
+    const localEpochs = parseInt(form.local_epochs, 10);
+    const expectedClients = parseInt(form.expected_clients, 10);
+
+    if (!Number.isInteger(roundCount) || !Number.isInteger(localEpochs)) {
+      setError("Round count and local epochs must be whole numbers.");
+      return;
+    }
+    if (!Number.isInteger(expectedClients)) {
+      setError("Expected clients must be a whole number.");
+      return;
+    }
+    if (roundCount < 1 || localEpochs < 1) {
       setError("Round count and local epochs must be at least 1.");
       return;
     }
-    if (form.expected_clients < 1) {
+    if (expectedClients < 1) {
       setError("Expected clients must be at least 1.");
       return;
     }
@@ -65,6 +79,9 @@ export default function CreateJobPage() {
     try {
       await client.post("/jobs/", {
         ...form,
+        round_count: roundCount,
+        local_epochs: localEpochs,
+        expected_clients: expectedClients,
         assigned_user_ids: selectedClientIds,
       });
       navigate("/dashboard");
@@ -124,6 +141,7 @@ export default function CreateJobPage() {
                 name="round_count"
                 value={form.round_count}
                 onChange={handleChange}
+                onWheel={stopNumberWheel}
                 min={1}
                 max={500}
               />
@@ -141,6 +159,7 @@ export default function CreateJobPage() {
                 name="local_epochs"
                 value={form.local_epochs}
                 onChange={handleChange}
+                onWheel={stopNumberWheel}
                 min={1}
                 max={200}
               />
@@ -158,6 +177,7 @@ export default function CreateJobPage() {
                 name="expected_clients"
                 value={form.expected_clients}
                 onChange={handleChange}
+                onWheel={stopNumberWheel}
                 min={1}
                 max={1000}
               />

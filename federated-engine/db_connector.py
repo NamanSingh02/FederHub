@@ -114,9 +114,19 @@ def record_round_metric(
     
     job = session.query(JobConfiguration).filter(JobConfiguration.id == job_id).first()
     if job:
-        job.current_round = round_number + 1
-        if round_number >= job.round_count:
+        expected_clients = job.expected_clients or 1
+        round_has_all_expected_clients = (
+            num_clients is None or num_clients >= expected_clients
+        )
+        if round_has_all_expected_clients:
+            job.current_round = round_number + 1
+        else:
+            job.current_round = round_number
+
+        if round_number >= job.round_count and round_has_all_expected_clients:
             job.status = "completed"
+        elif job.status != "failed":
+            job.status = "running"
 
     session.commit()
     session.refresh(metric)
