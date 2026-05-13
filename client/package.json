@@ -1,0 +1,46 @@
+{
+  "name": "federhub-electron-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 2 Team Beta prototype for the FederHub edge client.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "train": "python ml/train.py --data demo-client-data/sample_client_data.csv --checkpoint demo-client-data/sample_model.pt --output-dir ml/output",
+    "docker:build": "docker build -t federhub-beta-trainer .",
+    "pack:mac": "electron-builder --mac",
+    "pack:win": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^37.10.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.federhub.client",
+    "productName": "FederHub Edge Node",
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "asarUnpack": [
+      "ml/**/*",
+      "demo-client-data/**/*",
+      "grpc_weight_sender.py",
+      "Dockerfile",
+      "requirements.txt"
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "ml/**/*",
+      "demo-client-data/**/*",
+      "grpc_weight_sender.py",
+      "Dockerfile",
+      "requirements.txt",
+      "package.json"
+    ]
+  }
+}

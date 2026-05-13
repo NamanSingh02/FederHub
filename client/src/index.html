@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FederHub Edge Client</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <span class="navbar-brand">FederHub</span>
+      <span class="navbar-sub">Edge Node Client</span>
+    </nav>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">FederHub</p>
+        <h1>Edge Node Client</h1>
+        <p class="lede">
+          Secure local model training with checkpoint-based execution, protected
+          data access, and authenticated update delivery.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Client Operator Console</h2>
+            <p>
+              Sign in, select a model checkpoint, and choose the local dataset
+              folder before starting training.
+            </p>
+          </div>
+          <span class="badge">Secure Runtime</span>
+        </div>
+
+        <form id="client-form" class="grid">
+          <label>
+            <span>Operator Email</span>
+            <input
+              id="username"
+              name="username"
+              type="email"
+              placeholder="operator@federhub.local"
+            />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Enter password"
+            />
+          </label>
+
+          <label class="wide">
+            <span>FederHub API URL</span>
+            <input
+              id="alpha-api-url"
+              name="alpha-api-url"
+              type="url"
+              value="http://127.0.0.1:8000"
+              placeholder="http://127.0.0.1:8000"
+            />
+          </label>
+
+          <label class="wide">
+            <span>PyTorch Checkpoint (.pt)</span>
+            <div class="folder-row">
+              <input
+                id="checkpoint-path"
+                type="text"
+                readonly
+                placeholder="Choose a .pt checkpoint file"
+              />
+              <button id="pick-model-file" type="button" class="secondary">
+                Choose Checkpoint
+              </button>
+            </div>
+          </label>
+
+          <label>
+            <span>Aggregation Server</span>
+            <input
+              id="gamma-server"
+              name="gamma-server"
+              type="text"
+              value="host.docker.internal:50051"
+              placeholder="host.docker.internal:50051"
+            />
+          </label>
+
+          <label>
+            <span>Target Job ID</span>
+            <input
+              id="job-id"
+              name="job-id"
+              type="text"
+              placeholder="e.g., 1 or 5"
+              required
+            />
+          </label>
+
+          <label class="wide">
+            <span>Selected Local Data Folder</span>
+            <div class="folder-row">
+              <input
+                id="selected-folder"
+                type="text"
+                readonly
+                placeholder="Choose a folder containing the training dataset"
+              />
+              <button id="pick-folder" type="button" class="secondary">
+                Choose Folder
+              </button>
+            </div>
+          </label>
+
+          <section class="wide info-card">
+            <h3>Dataset Requirements</h3>
+            <p id="dataset-requirements-copy">
+              Select a checkpoint to load the expected dataset structure.
+            </p>
+            <p id="dataset-requirements-columns" class="mono"></p>
+            <p id="checkpoint-requirements" class="subtle">
+              The required CSV schema appears after checkpoint inspection.
+            </p>
+            <p class="subtle">
+              The selected data folder is mounted read-only so source files stay
+              local throughout training.
+            </p>
+          </section>
+
+          <div class="wide actions">
+            <button id="authenticate" type="button" class="secondary">
+              Authenticate
+            </button>
+            <button id="logout" type="button" class="secondary">
+              Logout
+            </button>
+            <button id="validate-inputs" type="button" class="secondary">
+              Validate Inputs
+            </button>
+            <button id="start-training" type="submit">Start Training</button>
+            <button id="download-model" type="button" class="secondary">
+              Download Global Model
+            </button>
+            <p class="hint">
+              Training runs in an isolated container and streams model
+              updates to the aggregation server after completion.
+            </p>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel output-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Execution Summary</h2>
+            <p>Authentication, training progress, and output details appear here.</p>
+          </div>
+          <span id="status-pill" class="badge muted">Idle</span>
+        </div>
+
+        <pre id="log-output" class="terminal">
+Ready. Sign in to continue.</pre
+        >
+
+        <section class="summary-grid">
+          <article class="summary-card">
+            <h3>Authentication</h3>
+            <p id="auth-summary" class="subtle">
+              Not authenticated yet.
+            </p>
+            <p id="session-summary" class="subtle">
+              Sign in to unlock checkpoint selection and training.
+            </p>
+          </article>
+          <article class="summary-card">
+            <h3>Target Job</h3>
+            <p id="job-summary" class="subtle">
+              Target job has not been verified yet.
+            </p>
+          </article>
+          <article class="summary-card">
+            <h3>Validation</h3>
+            <p id="validation-summary" class="subtle">
+              Input validation has not been run yet.
+            </p>
+          </article>
+          <article class="summary-card">
+            <h3>Progress</h3>
+            <ul id="progress-list" class="progress-list">
+              <li data-step="auth"><span>Authenticate</span><strong>Pending</strong></li>
+              <li data-step="inspect"><span>Inspect inputs</span><strong>Pending</strong></li>
+              <li data-step="build"><span>Build container</span><strong>Pending</strong></li>
+              <li data-step="load"><span>Load data</span><strong>Pending</strong></li>
+              <li data-step="train"><span>Train model</span><strong>Pending</strong></li>
+              <li data-step="save"><span>Save artifacts</span><strong>Pending</strong></li>
+              <li data-step="stream"><span>Stream update</span><strong>Pending</strong></li>
+            </ul>
+          </article>
+          <article class="summary-card wide-card">
+            <h3>Result Summary</h3>
+            <dl id="result-summary" class="result-summary">
+              <div><dt>Authenticated User</dt><dd>Not available yet</dd></div>
+              <div><dt>Updated model</dt><dd>Not available yet</dd></div>
+              <div><dt>Run summary</dt><dd>Not available yet</dd></div>
+              <div><dt>Checkpoint</dt><dd>Not available yet</dd></div>
+              <div><dt>Dataset</dt><dd>Not available yet</dd></div>
+              <div><dt>Aggregation Stream</dt><dd>Not available yet</dd></div>
+            </dl>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

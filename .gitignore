@@ -1,0 +1,53 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# ── Node / Electron ───────────────────────────────────────────────────────────
+node_modules/
+frontend/build/
+
+# Electron build output — rebuild with npm run pack:win
+client/dist/
+
+# ── Installers & Binaries ─────────────────────────────────────────────────────
+# Electron build artifacts in client/dist/ are excluded; only the final
+# installers copied to backend/downloads/ are tracked for distribution.
+client/dist/*.exe
+client/dist/*.dmg
+*.blockmap
+
+# ── Databases ─────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+backend/federhub_local.db
+
+# ── PyTorch Model Checkpoints ─────────────────────────────────────────────────
+# Exclude generated training output; demo seed models in demo-client-data/ are tracked
+client/ml/output/
+*.pt
+!client/demo-client-data/*.pt
+!client/dist/win-unpacked/resources/app.asar.unpacked/demo-client-data/*.pt
+
+# ── Environment & Secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── OS & Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Coverage & Logs ───────────────────────────────────────────────────────────
+coverage/
+*.log
+
+# ── Electron Installers ───────────────────────────────────────────────────────
+*.dmg
+*.exe
